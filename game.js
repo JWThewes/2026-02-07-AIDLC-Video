@@ -1,6 +1,7 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 import { AssetLoader } from './assetLoader.js';
 import { AudioManager } from './audioManager.js';
+import { PipeManager } from './Pipe.js';
 
 export class FlappyBirdGame {
     constructor() {
@@ -9,7 +10,7 @@ export class FlappyBirdGame {
         this.camera = null;
         this.renderer = null;
         this.bird = null;
-        this.pipes = [];
+        this.pipeManager = null;
         this.state = 'READY'; // READY, PLAYING, GAME_OVER
         this.score = 0;
         this.highScore = parseInt(localStorage.getItem('flappyHighScore') || '0');
@@ -31,6 +32,7 @@ export class FlappyBirdGame {
         this.setupRenderer();
         this.setupLights();
         this.createBird();
+        this.pipeManager = new PipeManager(this.scene, this.assetLoader);
         this.setupInput();
         this.updateUI();
         this.animate();
@@ -82,24 +84,9 @@ export class FlappyBirdGame {
     }
 
     createBird() {
-        this.bird = this.assetLoader.createBird();
+        this.bird = this.assetLoader.createBirdModel();
         this.bird.position.set(-2, 0, 0);
         this.scene.add(this.bird);
-    }
-
-    createPipe() {
-        const gapY = (Math.random() - 0.5) * 3;
-        const topPipe = this.assetLoader.createPipe();
-        const bottomPipe = this.assetLoader.createPipe();
-        
-        topPipe.position.set(10, gapY + this.pipeGap / 2 + 2.5, 0);
-        bottomPipe.position.set(10, gapY - this.pipeGap / 2 - 2.5, 0);
-        bottomPipe.rotation.z = Math.PI;
-        
-        this.scene.add(topPipe);
-        this.scene.add(bottomPipe);
-        
-        this.pipes.push({ top: topPipe, bottom: bottomPipe, scored: false });
     }
 
     setupInput() {
@@ -131,7 +118,7 @@ export class FlappyBirdGame {
     startGame() {
         this.state = 'PLAYING';
         document.getElementById('start-screen').classList.add('hidden');
-        this.createPipe();
+        this.pipeManager.spawnPipe(this.pipeGap);
     }
 
     flap() {
@@ -147,54 +134,32 @@ export class FlappyBirdGame {
         this.bird.position.y += this.birdVelocity * deltaTime;
         this.bird.rotation.z = Math.max(-Math.PI / 4, Math.min(Math.PI / 4, this.birdVelocity * 50));
 
-        // Update pipes
-        for (let i = this.pipes.length - 1; i >= 0; i--) {
-            const pipe = this.pipes[i];
-            pipe.top.position.x -= this.gameSpeed * deltaTime;
-            pipe.bottom.position.x -= this.gameSpeed * deltaTime;
-
-            // Check scoring
-            if (!pipe.scored && pipe.top.position.x < this.bird.position.x) {
-                pipe.scored = true;
-                this.score++;
-                this.audioManager.playScore();
-                this.updateUI();
-                
-                // Increase difficulty
-                this.gameSpeed += 0.0001;
-                this.pipeGap = Math.max(1.8, this.pipeGap - 0.02);
-            }
-
-            // Remove off-screen pipes
-            if (pipe.top.position.x < -10) {
-                this.scene.remove(pipe.top);
-                this.scene.remove(pipe.bottom);
-                this.pipes.splice(i, 1);
-            }
-
-            // Check collision
-            if (this.checkCollision(pipe)) {
-                this.gameOver();
-            }
+        // Update pipes and check for spawning
+        const shouldSpawn = this.pipeManager.update(deltaTime, this.gameSpeed, this.bird.position.x);
+        if (shouldSpawn) {
+            this.pipeManager.spawnPipe(this.pipeGap);
         }
 
-        // Spawn new pipes
-        if (this.pipes.length === 0 || this.pipes[this.pipes.length - 1].top.position.x < 5) {
-            this.createPipe();
+        // Check collisions and scoring
+        const birdBox = new THREE.Box3().setFromObject(this.bird);
+        const collisionResult = this.pipeManager.checkCollisions(birdBox, this.bird.position.x);
+        
+        if (collisionResult === true) {
+            this.gameOver();
+        } else if (collisionResult === 'scored') {
+            this.score++;
+            this.audioManager.playScore();
+            this.updateUI();
+            
+            // Increase difficulty
+            this.gameSpeed += 0.0001;
+            this.pipeGap = Math.max(1.8, this.pipeGap - 0.02);
         }
 
         // Check ground/ceiling collision
         if (this.bird.position.y < -4 || this.bird.position.y > 4) {
             this.gameOver();
         }
-    }
-
-    checkCollision(pipe) {
-        const birdBox = new THREE.Box3().setFromObject(this.bird);
-        const topBox = new THREE.Box3().setFromObject(pipe.top);
-        const bottomBox = new THREE.Box3().setFromObject(pipe.bottom);
-        
-        return birdBox.intersectsBox(topBox) || birdBox.intersectsBox(bottomBox);
     }
 
     gameOver() {
@@ -221,11 +186,7 @@ export class FlappyBirdGame {
         this.bird.position.set(-2, 0, 0);
         this.bird.rotation.z = 0;
         
-        this.pipes.forEach(pipe => {
-            this.scene.remove(pipe.top);
-            this.scene.remove(pipe.bottom);
-        });
-        this.pipes = [];
+        this.pipeManager.reset();
         
         this.updateUI();
         document.getElementById('game-over-screen').classList.add('hidden');

@@ -164,4 +164,20 @@ export class AssetLoader {
 
     return pipe;
   }
+
+  /**
+   * Create bird (wrapper for createBirdModel)
+   * @returns {THREE.Group} - Bird model
+   */
+  createBird() {
+    return this.createBirdModel();
+  }
+
+  /**
+   * Create pipe (wrapper for createPipeModel)
+   * @returns {THREE.Group} - Pipe model
+   */
+  createPipe() {
+    return this.createPipeModel();
+  }
 }
