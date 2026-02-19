@@ -1,8 +1,16 @@
 {
   "name": "flappy-bird-3d",
   "version": "1.0.0",
+  "description": "A 3D Flappy Bird clone using Three.js",
   "type": "module",
+  "scripts": {
+    "dev": "npx http-server -p 8080",
+    "start": "npx http-server -p 8080"
+  },
   "dependencies": {
     "three": "^0.160.0"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
   }
 }
