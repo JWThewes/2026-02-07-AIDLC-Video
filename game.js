@@ -119,6 +119,9 @@ export class FlappyBirdGame {
         this.state = 'PLAYING';
         document.getElementById('start-screen').classList.add('hidden');
         this.pipeManager.spawnPipe(this.pipeGap);
+        // Give the bird an initial upward velocity to prevent immediate crash
+        this.birdVelocity = this.flapForce;
+        this.audioManager.playFlap();
     }
 
     flap() {
