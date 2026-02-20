@@ -17,8 +17,11 @@ export class FlappyBirdGame {
         this.birdVelocity = 0;
         // Physics constants scaled for millisecond deltaTime (from requestAnimationFrame)
         // At 60 FPS, deltaTime ≈ 16.67ms
-        this.gravity = -0.00008; // Gentle gravity for gliding feel
-        this.flapForce = 0.0018; // Strong flap for upward boost
+        // Classic Flappy Bird: each flap resets velocity to fixed value (not additive)
+        // Rapid flapping should keep bird airborne
+        this.gravity = -0.00015; // Gravity that allows sustained flight when flapping
+        this.flapForce = 0.0045; // Flap force strong enough to overcome gravity
+        this.maxFallSpeed = -0.008; // Terminal velocity to prevent excessive falling
         this.gameSpeed = 0.003;
         this.pipeGap = 2.5;
         this.lastTime = 0;
@@ -136,6 +139,8 @@ export class FlappyBirdGame {
 
         // Update bird physics
         this.birdVelocity += this.gravity * deltaTime;
+        // Clamp to terminal velocity (max fall speed)
+        this.birdVelocity = Math.max(this.maxFallSpeed, this.birdVelocity);
         this.bird.position.y += this.birdVelocity * deltaTime;
         this.bird.rotation.z = Math.max(-Math.PI / 4, Math.min(Math.PI / 4, this.birdVelocity * 50));
 
