@@ -58,7 +58,7 @@ body {
     background: rgba(0, 0, 0, 0.7);
     padding: 40px;
     border-radius: 20px;
-    pointer-events: auto;
+    pointer-events: none;
 }
 
 #start-screen h1 {
