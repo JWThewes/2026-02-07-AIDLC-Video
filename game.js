@@ -15,8 +15,8 @@ export class FlappyBirdGame {
         this.score = 0;
         this.highScore = parseInt(localStorage.getItem('flappyHighScore') || '0');
         this.birdVelocity = 0;
-        this.gravity = -0.0008;
-        this.flapForce = 0.015;
+        this.gravity = -0.0018; // Increased from -0.0008 for more noticeable fall
+        this.flapForce = 0.035; // Increased from 0.015 for stronger upward boost
         this.gameSpeed = 0.003;
         this.pipeGap = 2.5;
         this.lastTime = 0;
