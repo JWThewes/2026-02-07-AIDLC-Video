@@ -15,8 +15,10 @@ export class FlappyBirdGame {
         this.score = 0;
         this.highScore = parseInt(localStorage.getItem('flappyHighScore') || '0');
         this.birdVelocity = 0;
-        this.gravity = -0.0012; // Gentler gravity for gliding feel
-        this.flapForce = 0.028; // Strong flap but balanced with gentler gravity
+        // Physics constants scaled for millisecond deltaTime (from requestAnimationFrame)
+        // At 60 FPS, deltaTime ≈ 16.67ms
+        this.gravity = -0.00008; // Gentle gravity for gliding feel
+        this.flapForce = 0.0018; // Strong flap for upward boost
         this.gameSpeed = 0.003;
         this.pipeGap = 2.5;
         this.lastTime = 0;
