@@ -21,7 +21,7 @@ export class FlappyBirdGame {
         this.flapForce = 7.5;     // units/sec - SET velocity on flap (not additive)
         this.maxFallSpeed = -10;  // units/sec - terminal velocity cap
         this.gameSpeed = 3;
-        this.pipeGap = 2.5;
+        this.pipeGap = 3.5;
         this.lastTime = 0;
         this.assetLoader = new AssetLoader();
         this.audioManager = new AudioManager();
@@ -161,7 +161,7 @@ export class FlappyBirdGame {
             
             // Increase difficulty
             this.gameSpeed += 0.1;
-            this.pipeGap = Math.max(1.8, this.pipeGap - 0.02);
+            this.pipeGap = Math.max(2.5, this.pipeGap - 0.02);
         }
 
         // Check ground/ceiling collision
@@ -189,7 +189,7 @@ export class FlappyBirdGame {
         this.score = 0;
         this.birdVelocity = 0;
         this.gameSpeed = 3;
-        this.pipeGap = 2.5;
+        this.pipeGap = 3.5;
         
         this.bird.position.set(-2, 0, 0);
         this.bird.rotation.z = 0;
