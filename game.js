@@ -15,14 +15,12 @@ export class FlappyBirdGame {
         this.score = 0;
         this.highScore = parseInt(localStorage.getItem('flappyHighScore') || '0');
         this.birdVelocity = 0;
-        // Physics constants scaled for millisecond deltaTime (from requestAnimationFrame)
-        // At 60 FPS, deltaTime ≈ 16.67ms
-        // Classic Flappy Bird: each flap resets velocity to fixed value (not additive)
-        // Rapid flapping should keep bird airborne
-        this.gravity = -0.00015; // Gravity that allows sustained flight when flapping
-        this.flapForce = 0.0045; // Flap force strong enough to overcome gravity
-        this.maxFallSpeed = -0.008; // Terminal velocity to prevent excessive falling
-        this.gameSpeed = 0.003;
+        // Physics constants use SECONDS for deltaTime (converted from ms in animate())
+        // Reference: Bird.js has gravity=-25, flapForce=8 which works well
+        this.gravity = -25;       // units/sec^2 - moderate pull downward
+        this.flapForce = 7.5;     // units/sec - SET velocity on flap (not additive)
+        this.maxFallSpeed = -10;  // units/sec - terminal velocity cap
+        this.gameSpeed = 3;
         this.pipeGap = 2.5;
         this.lastTime = 0;
         this.assetLoader = new AssetLoader();
@@ -142,7 +140,7 @@ export class FlappyBirdGame {
         // Clamp to terminal velocity (max fall speed)
         this.birdVelocity = Math.max(this.maxFallSpeed, this.birdVelocity);
         this.bird.position.y += this.birdVelocity * deltaTime;
-        this.bird.rotation.z = Math.max(-Math.PI / 4, Math.min(Math.PI / 4, this.birdVelocity * 50));
+        this.bird.rotation.z = Math.max(-Math.PI / 4, Math.min(Math.PI / 4, this.birdVelocity * 0.15));
 
         // Update pipes and check for spawning
         const shouldSpawn = this.pipeManager.update(deltaTime, this.gameSpeed, this.bird.position.x);
@@ -162,7 +160,7 @@ export class FlappyBirdGame {
             this.updateUI();
             
             // Increase difficulty
-            this.gameSpeed += 0.0001;
+            this.gameSpeed += 0.1;
             this.pipeGap = Math.max(1.8, this.pipeGap - 0.02);
         }
 
@@ -190,7 +188,7 @@ export class FlappyBirdGame {
         this.state = 'READY';
         this.score = 0;
         this.birdVelocity = 0;
-        this.gameSpeed = 0.003;
+        this.gameSpeed = 3;
         this.pipeGap = 2.5;
         
         this.bird.position.set(-2, 0, 0);
@@ -210,8 +208,12 @@ export class FlappyBirdGame {
     animate(currentTime = 0) {
         requestAnimationFrame((time) => this.animate(time));
         
-        const deltaTime = currentTime - this.lastTime;
+        // Convert deltaTime from milliseconds to seconds
+        let deltaTime = (currentTime - this.lastTime) / 1000;
         this.lastTime = currentTime;
+        
+        // Guard: skip first frame (lastTime was 0) and cap at 100ms to prevent spiral
+        if (deltaTime > 0.1 || deltaTime < 0) deltaTime = 1 / 60;
         
         this.update(deltaTime);
         this.renderer.render(this.scene, this.camera);
