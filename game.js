@@ -2,6 +2,9 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
 import { AssetLoader } from './assetLoader.js';
 import { AudioManager } from './audioManager.js';
 import { PipeManager } from './Pipe.js';
+import { ShaderManager } from './ShaderManager.js';
+import { PostProcessing } from './PostProcessing.js';
+import { ParticleSystem } from './ParticleSystem.js';
 
 export class FlappyBirdGame {
     constructor() {
@@ -25,6 +28,9 @@ export class FlappyBirdGame {
         this.lastTime = 0;
         this.assetLoader = new AssetLoader();
         this.audioManager = new AudioManager();
+        this.shaderManager = null;
+        this.postProcessing = null;
+        this.particleSystem = null;
         
         this.init();
     }
@@ -36,6 +42,9 @@ export class FlappyBirdGame {
         this.setupLights();
         this.createBird();
         this.pipeManager = new PipeManager(this.scene, this.assetLoader);
+        this.shaderManager = new ShaderManager(this.scene, this.camera);
+        this.postProcessing = new PostProcessing(this.renderer, this.scene, this.camera);
+        this.particleSystem = new ParticleSystem(this.scene);
         this.setupInput();
         this.updateUI();
         this.animate();
@@ -44,7 +53,7 @@ export class FlappyBirdGame {
     setupScene() {
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x87CEEB);
-        this.scene.fog = new THREE.Fog(0x87CEEB, 10, 50);
+        this.scene.fog = new THREE.Fog(0x87CEEB, 15, 50);
     }
 
     setupCamera() {
@@ -63,6 +72,8 @@ export class FlappyBirdGame {
             canvas: this.canvas,
             antialias: true 
         });
+        this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        this.renderer.toneMappingExposure = 1.1;
         this.handleResize();
         window.addEventListener('resize', () => this.handleResize());
     }
@@ -75,20 +86,39 @@ export class FlappyBirdGame {
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(width, height);
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        if (this.postProcessing) this.postProcessing.resize(width, height);
     }
 
     setupLights() {
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        // Hemisphere light for natural sky/ground color bleed
+        const hemiLight = new THREE.HemisphereLight(0x88ccff, 0x44aa44, 0.5);
+        this.scene.add(hemiLight);
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
         this.scene.add(ambientLight);
 
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        const directionalLight = new THREE.DirectionalLight(0xfff5e0, 1.0);
         directionalLight.position.set(5, 10, 5);
         this.scene.add(directionalLight);
+
+        // Warm point light near bird for rim-lighting effect
+        const pointLight = new THREE.PointLight(0xffaa44, 0.6, 15);
+        pointLight.position.set(-2, 2, 5);
+        this.scene.add(pointLight);
     }
 
     createBird() {
         this.bird = this.assetLoader.createBirdModel();
         this.bird.position.set(-2, 0, 0);
+        // Enhance bird materials with subtle emissive glow
+        this.bird.traverse((child) => {
+            if (child.isMesh && child.material) {
+                child.material.emissive = child.material.color.clone().multiplyScalar(0.15);
+                child.material.emissiveIntensity = 0.4;
+                child.material.metalness = Math.min(child.material.metalness + 0.1, 0.5);
+                child.material.roughness = Math.max(child.material.roughness - 0.1, 0.3);
+            }
+        });
         this.scene.add(this.bird);
     }
 
@@ -133,7 +163,12 @@ export class FlappyBirdGame {
     }
 
     update(deltaTime) {
-        if (this.state !== 'PLAYING') return;
+        if (this.state !== 'PLAYING') {
+            // Still update visual systems when not playing for ambient animation
+            this.shaderManager.update(deltaTime);
+            this.particleSystem.update(deltaTime);
+            return;
+        }
 
         // Update bird physics
         this.birdVelocity += this.gravity * deltaTime;
@@ -141,6 +176,13 @@ export class FlappyBirdGame {
         this.birdVelocity = Math.max(this.maxFallSpeed, this.birdVelocity);
         this.bird.position.y += this.birdVelocity * deltaTime;
         this.bird.rotation.z = Math.max(-Math.PI / 4, Math.min(Math.PI / 4, this.birdVelocity * 0.15));
+
+        // Animate wings based on velocity
+        const wingAngle = 0.3 + Math.sin(Date.now() * 0.015) * 0.2;
+        if (this.bird.children.length >= 7) {
+            this.bird.children[5].rotation.z = -wingAngle; // left wing
+            this.bird.children[6].rotation.z = wingAngle;  // right wing
+        }
 
         // Update pipes and check for spawning
         const shouldSpawn = this.pipeManager.update(deltaTime, this.gameSpeed, this.bird.position.x);
@@ -158,6 +200,8 @@ export class FlappyBirdGame {
             this.score++;
             this.audioManager.playScore();
             this.updateUI();
+            // Score sparkle particles
+            this.particleSystem.spawnSparkles(this.bird.position.clone());
             
             // Increase difficulty
             this.gameSpeed += 0.1;
@@ -168,11 +212,19 @@ export class FlappyBirdGame {
         if (this.bird.position.y < -4 || this.bird.position.y > 4) {
             this.gameOver();
         }
+
+        // Update visual systems
+        this.shaderManager.update(deltaTime);
+        this.particleSystem.update(deltaTime);
     }
 
     gameOver() {
         this.state = 'GAME_OVER';
         this.audioManager.playHit();
+        
+        // Visual feedback: screen shake + feather burst
+        this.shaderManager.triggerShake(0.35);
+        this.particleSystem.spawnFeathers(this.bird.position.clone());
         
         if (this.score > this.highScore) {
             this.highScore = this.score;
@@ -216,6 +268,7 @@ export class FlappyBirdGame {
         if (deltaTime > 0.1 || deltaTime < 0) deltaTime = 1 / 60;
         
         this.update(deltaTime);
-        this.renderer.render(this.scene, this.camera);
+        // Render through post-processing pipeline (bloom + color grading)
+        this.postProcessing.render();
     }
 }

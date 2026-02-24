@@ -41,30 +41,38 @@ export class Pipe {
         const group = new THREE.Group();
         const variation = Math.floor(Math.random() * 3);
 
-        const colors = [0x00aa00, 0x9933ff, 0xff6600];
+        const colors = [0x00cc44, 0xaa44ff, 0xff7722];
+        const emissiveColors = [0x003311, 0x220044, 0x331100];
         const color = colors[variation];
 
+        // Enhanced PBR metallic material
         const material = new THREE.MeshStandardMaterial({
             color,
-            roughness: 0.6,
-            metalness: 0.2
+            roughness: 0.25,
+            metalness: 0.7,
+            emissive: emissiveColors[variation],
+            emissiveIntensity: 0.3
         });
 
-        // Main body
+        // Main body with higher segment count for smoother reflections
         const body = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.5, 0.5, height, 16),
+            new THREE.CylinderGeometry(0.5, 0.5, height, 24),
             material
         );
         group.add(body);
 
-        // Rim at the opening end (bottom of top pipe / top of bottom pipe)
-        const rimMat = material.clone();
-        rimMat.color.multiplyScalar(0.8);
+        // Glowing rim at the gap-facing edge
+        const rimMat = new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            roughness: 0.15,
+            metalness: 0.9,
+            emissive: color,
+            emissiveIntensity: 0.5
+        });
         const rim = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.65, 0.65, 0.4, 16),
+            new THREE.CylinderGeometry(0.65, 0.65, 0.4, 24),
             rimMat
         );
-        // Place rim at the edge closest to the gap (bottom of this mesh)
         rim.position.y = -height / 2;
         group.add(rim);
 
