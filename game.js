@@ -123,29 +123,30 @@ export class FlappyBirdGame {
     }
 
     setupInput() {
-        const handleInput = () => {
-            if (this.state === 'READY') {
-                this.startGame();
-            } else if (this.state === 'PLAYING') {
-                this.flap();
-            } else if (this.state === 'GAME_OVER') {
-                this.restart();
-            }
-        };
-
         window.addEventListener('keydown', (e) => {
             if (e.code === 'Space') {
                 e.preventDefault();
-                handleInput();
+                this.handleInput();
             }
         });
 
-        this.canvas.addEventListener('touchstart', (e) => {
+        const handlePointerInput = (e) => {
             e.preventDefault();
-            handleInput();
-        });
+            this.handleInput();
+        };
 
-        this.canvas.addEventListener('click', handleInput);
+        window.addEventListener('touchstart', handlePointerInput, { passive: false });
+        window.addEventListener('mousedown', handlePointerInput);
+    }
+
+    handleInput() {
+        if (this.state === 'READY') {
+            this.startGame();
+        } else if (this.state === 'PLAYING') {
+            this.flap();
+        } else if (this.state === 'GAME_OVER') {
+            this.restart();
+        }
     }
 
     startGame() {
