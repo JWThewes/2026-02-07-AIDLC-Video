@@ -9,6 +9,12 @@ import { ParticleSystem } from './ParticleSystem.js';
 export class FlappyBirdGame {
     constructor() {
         this.canvas = document.getElementById('game-canvas');
+        if (!this.canvas) {
+            console.error('[Game] ERROR: Canvas element #game-canvas not found!');
+            return;
+        }
+        console.log('[Game] Canvas found:', this.canvas);
+        
         this.scene = null;
         this.camera = null;
         this.renderer = null;
@@ -36,19 +42,41 @@ export class FlappyBirdGame {
     }
 
     init() {
-        this.setupScene();
-        this.setupCamera();
-        this.setupRenderer();
-        this.setupLights();
-        this.createBird();
-        this.audioManager = new AudioManager(this.camera);
-        this.pipeManager = new PipeManager(this.scene, this.assetLoader);
-        this.shaderManager = new ShaderManager(this.scene, this.camera);
-        this.postProcessing = new PostProcessing(this.renderer, this.scene, this.camera);
-        this.particleSystem = new ParticleSystem(this.scene);
-        this.setupInput();
-        this.updateUI();
-        this.animate();
+        console.log('[Game] init() started');
+        
+        if (!this.canvas) {
+            console.error('[Game] Cannot init - canvas not found');
+            return;
+        }
+        
+        try {
+            this.setupScene();
+            console.log('[Game] Scene setup complete');
+            this.setupCamera();
+            console.log('[Game] Camera setup complete');
+            this.setupRenderer();
+            console.log('[Game] Renderer setup complete');
+            this.setupLights();
+            console.log('[Game] Lights setup complete');
+            this.createBird();
+            console.log('[Game] Bird created');
+            this.audioManager = new AudioManager(this.camera);
+            console.log('[Game] Audio manager created');
+            this.pipeManager = new PipeManager(this.scene, this.assetLoader);
+            console.log('[Game] Pipe manager created');
+            this.shaderManager = new ShaderManager(this.scene, this.camera);
+            console.log('[Game] Shader manager created');
+            this.postProcessing = new PostProcessing(this.renderer, this.scene, this.camera);
+            console.log('[Game] Post processing created');
+            this.particleSystem = new ParticleSystem(this.scene);
+            console.log('[Game] Particle system created');
+            this.setupInput();
+            this.updateUI();
+            this.animate();
+            console.log('[Game] init() complete - game is ready to play!');
+        } catch (error) {
+            console.error('[Game] Error during init():', error);
+        }
     }
 
     setupScene() {
@@ -124,25 +152,36 @@ export class FlappyBirdGame {
     }
 
     setupInput() {
+        console.log('[Game] Setting up input handlers...');
+        
         const handleKeyDown = (e) => {
+            console.log('[Game] Key pressed:', e.code, e.key, e.keyCode);
             if (e.code === 'Space' || e.key === ' ' || e.keyCode === 32) {
                 e.preventDefault();
+                e.stopPropagation();
+                console.log('[Game] Spacebar detected, current state:', this.state);
                 this.handleInput();
             }
         };
 
         window.addEventListener('keydown', handleKeyDown);
+        document.addEventListener('keydown', handleKeyDown);
+        console.log('[Game] Keydown listeners attached to window and document');
 
         const handlePointerInput = (e) => {
             e.preventDefault();
+            console.log('[Game] Pointer input detected');
             this.handleInput();
         };
 
         window.addEventListener('touchstart', handlePointerInput, { passive: false });
         window.addEventListener('mousedown', handlePointerInput);
+        document.addEventListener('click', handlePointerInput);
+        console.log('[Game] Pointer listeners attached');
     }
 
     handleInput() {
+        console.log('[Game] handleInput called, current state:', this.state);
         if (this.state === 'READY') {
             this.startGame();
         } else if (this.state === 'PLAYING') {
