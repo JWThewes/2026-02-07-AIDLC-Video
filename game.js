@@ -27,7 +27,7 @@ export class FlappyBirdGame {
         this.pipeGap = 3.5;
         this.lastTime = 0;
         this.assetLoader = new AssetLoader();
-        this.audioManager = new AudioManager();
+        this.audioManager = null;
         this.shaderManager = null;
         this.postProcessing = null;
         this.particleSystem = null;
@@ -41,6 +41,7 @@ export class FlappyBirdGame {
         this.setupRenderer();
         this.setupLights();
         this.createBird();
+        this.audioManager = new AudioManager(this.camera);
         this.pipeManager = new PipeManager(this.scene, this.assetLoader);
         this.shaderManager = new ShaderManager(this.scene, this.camera);
         this.postProcessing = new PostProcessing(this.renderer, this.scene, this.camera);
@@ -123,12 +124,14 @@ export class FlappyBirdGame {
     }
 
     setupInput() {
-        window.addEventListener('keydown', (e) => {
-            if (e.code === 'Space') {
+        const handleKeyDown = (e) => {
+            if (e.code === 'Space' || e.key === ' ' || e.keyCode === 32) {
                 e.preventDefault();
                 this.handleInput();
             }
-        });
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
 
         const handlePointerInput = (e) => {
             e.preventDefault();
@@ -153,14 +156,13 @@ export class FlappyBirdGame {
         this.state = 'PLAYING';
         document.getElementById('start-screen').classList.add('hidden');
         this.pipeManager.spawnPipe(this.pipeGap);
-        // Give the bird an initial upward velocity to prevent immediate crash
         this.birdVelocity = this.flapForce;
-        this.audioManager.playFlap();
+        if (this.audioManager) this.audioManager.play('flap');
     }
 
     flap() {
         this.birdVelocity = this.flapForce;
-        this.audioManager.playFlap();
+        if (this.audioManager) this.audioManager.play('flap');
     }
 
     update(deltaTime) {
@@ -199,7 +201,7 @@ export class FlappyBirdGame {
             this.gameOver();
         } else if (collisionResult === 'scored') {
             this.score++;
-            this.audioManager.playScore();
+            if (this.audioManager) this.audioManager.play('score');
             this.updateUI();
             // Score sparkle particles
             this.particleSystem.spawnSparkles(this.bird.position.clone());
@@ -221,7 +223,7 @@ export class FlappyBirdGame {
 
     gameOver() {
         this.state = 'GAME_OVER';
-        this.audioManager.playHit();
+        if (this.audioManager) this.audioManager.play('collision');
         
         // Visual feedback: screen shake + feather burst
         this.shaderManager.triggerShake(0.35);
