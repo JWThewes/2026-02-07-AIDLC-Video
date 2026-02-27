@@ -44,8 +44,10 @@ window.addEventListener('unhandledrejection', (e) => {
     console.error('[Main] Unhandled promise rejection:', e.reason);
 });
 
-window.addEventListener('DOMContentLoaded', () => {
-    console.log('[Main] ===== DOMContentLoaded EVENT FIRED =====');
+// CRITICAL FIX: DOMContentLoaded may never fire if DOM is already loaded
+// Module scripts can execute after DOM is ready, so we must check readyState
+function initializeGame() {
+    console.log('[Main] ===== INITIALIZATION FUNCTION CALLED =====');
     console.log('[Main] Timestamp:', new Date().toISOString());
     console.log('[Main] Document ready state:', document.readyState);
     console.log('[Main] Body exists:', !!document.body);
@@ -56,11 +58,15 @@ window.addEventListener('DOMContentLoaded', () => {
     // Update debug display immediately to show initialization started
     const debugDiv = document.getElementById('debug-key-display');
     if (debugDiv) {
+        console.log('[Main] Found debug div, updating to "Loading game assets..."');
         debugDiv.textContent = 'Loading game assets...';
         debugDiv.style.backgroundColor = '#336699';
+    } else {
+        console.error('[Main] DEBUG DIV NOT FOUND - this should not happen!');
     }
 
     try {
+        console.log('[Main] Creating FlappyBirdGame instance...');
         const game = new FlappyBirdGame();
         console.log('[Main] Game initialized successfully');
         console.log('[Main] Game state:', game.state);
@@ -73,6 +79,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // Visual confirmation in debug display - update immediately, no setTimeout
         if (debugDiv) {
+            console.log('[Main] Updating debug div to READY state');
             debugDiv.textContent = '✓ READY - Press SPACEBAR or CLICK to start!';
             debugDiv.style.backgroundColor = '#006600';
             debugDiv.style.fontWeight = 'bold';
@@ -88,4 +95,22 @@ window.addEventListener('DOMContentLoaded', () => {
             debugDiv.style.backgroundColor = '#660000';
         }
     }
-});
+}
+
+// CRITICAL FIX: Check if DOM is already loaded
+console.log('[Main] Checking document ready state before adding event listener...');
+console.log('[Main] Current readyState:', document.readyState);
+
+if (document.readyState === 'loading') {
+    // DOM is still loading, wait for DOMContentLoaded event
+    console.log('[Main] DOM is still loading, adding DOMContentLoaded listener');
+    window.addEventListener('DOMContentLoaded', () => {
+        console.log('[Main] DOMContentLoaded event fired');
+        initializeGame();
+    });
+} else {
+    // DOM is already loaded (readyState is 'interactive' or 'complete')
+    // Execute initialization immediately
+    console.log('[Main] DOM already loaded (readyState:', document.readyState, '), executing immediately');
+    initializeGame();
+}
