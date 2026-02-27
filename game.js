@@ -152,25 +152,84 @@ export class FlappyBirdGame {
     }
 
     setupInput() {
-        console.log('[Game] Setting up input handlers...');
-        
+        console.log('[Game] ===== SETUP INPUT STARTED =====');
+        console.log('[Game] Document ready state:', document.readyState);
+        console.log('[Game] Window object exists:', typeof window !== 'undefined');
+        console.log('[Game] Document object exists:', typeof document !== 'undefined');
+
+        // STRATEGY 1: Global keyboard monitor (FIRST priority - catches everything)
+        const globalKeyMonitor = (e) => {
+            console.log('[GLOBAL KEY MONITOR] Key detected BEFORE game handler:', {
+                code: e.code,
+                key: e.key,
+                keyCode: e.keyCode,
+                type: e.type,
+                target: e.target.tagName,
+                timestamp: Date.now()
+            });
+
+            // Update visual debug indicator
+            const debugDiv = document.getElementById('debug-key-display');
+            if (debugDiv) {
+                debugDiv.textContent = `Last key: ${e.code} (${e.key}) at ${new Date().toLocaleTimeString()}`;
+                debugDiv.style.backgroundColor = '#00ff00';
+                setTimeout(() => {
+                    debugDiv.style.backgroundColor = '#333';
+                }, 200);
+            }
+        };
+
+        // Attach global monitor at capture phase (runs before bubble phase)
+        window.addEventListener('keydown', globalKeyMonitor, true);
+        window.addEventListener('keyup', globalKeyMonitor, true);
+        console.log('[Game] Global keyboard monitor attached (capture phase)');
+
+        // STRATEGY 2: Multiple redundant handlers with different binding approaches
         const handleKeyDown = (e) => {
+            console.log('[Game] ===== GAME KEY HANDLER FIRED =====');
             console.log('[Game] Key pressed:', e.code, e.key, e.keyCode);
-            if (e.code === 'Space' || e.key === ' ' || e.keyCode === 32) {
+            console.log('[Game] Event type:', e.type);
+            console.log('[Game] Target element:', e.target);
+            console.log('[Game] Current game state:', this.state);
+
+            if (e.code === 'Space' || e.key === ' ' || e.key === 'Spacebar' || e.keyCode === 32) {
+                console.log('[Game] !!!!! SPACEBAR CONFIRMED !!!!!');
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('[Game] Spacebar detected, current state:', this.state);
+                console.log('[Game] Calling handleInput() with state:', this.state);
                 this.handleInput();
             }
         };
 
-        window.addEventListener('keydown', handleKeyDown);
-        document.addEventListener('keydown', handleKeyDown);
-        console.log('[Game] Keydown listeners attached to window and document');
+        // Attach to window (bubble phase)
+        window.addEventListener('keydown', handleKeyDown, false);
+        console.log('[Game] Handler attached to window (bubble)');
 
+        // Attach to document (bubble phase)
+        document.addEventListener('keydown', handleKeyDown, false);
+        console.log('[Game] Handler attached to document (bubble)');
+
+        // Attach to body (bubble phase)
+        document.body.addEventListener('keydown', handleKeyDown, false);
+        console.log('[Game] Handler attached to body (bubble)');
+
+        // STRATEGY 3: Canvas-specific handler
+        if (this.canvas) {
+            this.canvas.setAttribute('tabindex', '0');
+            this.canvas.addEventListener('keydown', handleKeyDown, false);
+            console.log('[Game] Handler attached to canvas with tabindex');
+
+            // Auto-focus canvas on click
+            this.canvas.addEventListener('click', () => {
+                console.log('[Game] Canvas clicked, focusing...');
+                this.canvas.focus();
+            });
+        }
+
+        // STRATEGY 4: Pointer/touch inputs
         const handlePointerInput = (e) => {
             e.preventDefault();
-            console.log('[Game] Pointer input detected');
+            console.log('[Game] Pointer input detected:', e.type);
             this.handleInput();
         };
 
@@ -178,25 +237,62 @@ export class FlappyBirdGame {
         window.addEventListener('mousedown', handlePointerInput);
         document.addEventListener('click', handlePointerInput);
         console.log('[Game] Pointer listeners attached');
+
+        // STRATEGY 5: Test immediate spacebar detection
+        console.log('[Game] Testing immediate key detection - press spacebar now...');
+        setTimeout(() => {
+            console.log('[Game] 5 seconds passed, checking if spacebar was pressed...');
+        }, 5000);
+
+        console.log('[Game] ===== SETUP INPUT COMPLETE =====');
+        console.log('[Game] Press any key to test - watch console for [GLOBAL KEY MONITOR] messages');
     }
 
     handleInput() {
-        console.log('[Game] handleInput called, current state:', this.state);
+        console.log('[Game] ===== HANDLE INPUT CALLED =====');
+        console.log('[Game] Current state:', this.state);
+        console.log('[Game] Bird exists:', !!this.bird);
+        console.log('[Game] Bird velocity:', this.birdVelocity);
+
         if (this.state === 'READY') {
+            console.log('[Game] State is READY - calling startGame()');
             this.startGame();
         } else if (this.state === 'PLAYING') {
+            console.log('[Game] State is PLAYING - calling flap()');
             this.flap();
         } else if (this.state === 'GAME_OVER') {
+            console.log('[Game] State is GAME_OVER - calling restart()');
             this.restart();
+        } else {
+            console.log('[Game] WARNING: Unknown state:', this.state);
         }
+        console.log('[Game] ===== HANDLE INPUT COMPLETE =====');
     }
 
     startGame() {
+        console.log('[Game] ===== START GAME CALLED =====');
+        console.log('[Game] Changing state from', this.state, 'to PLAYING');
         this.state = 'PLAYING';
-        document.getElementById('start-screen').classList.add('hidden');
+
+        const startScreen = document.getElementById('start-screen');
+        if (startScreen) {
+            startScreen.classList.add('hidden');
+            console.log('[Game] Start screen hidden');
+        } else {
+            console.error('[Game] Start screen element not found!');
+        }
+
         this.pipeManager.spawnPipe(this.pipeGap);
+        console.log('[Game] Pipe spawned');
+
         this.birdVelocity = this.flapForce;
-        if (this.audioManager) this.audioManager.play('flap');
+        console.log('[Game] Bird velocity set to:', this.birdVelocity);
+
+        if (this.audioManager) {
+            this.audioManager.play('flap');
+            console.log('[Game] Flap sound played');
+        }
+        console.log('[Game] ===== START GAME COMPLETE =====');
     }
 
     flap() {
