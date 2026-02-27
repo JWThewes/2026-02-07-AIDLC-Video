@@ -11,15 +11,20 @@
         <canvas id="game-canvas" data-testid="game-canvas"></canvas>
         
         <div id="ui-overlay">
+            <!-- DEBUG: Visual keyboard event indicator -->
+            <div id="debug-key-display" style="position: absolute; top: 10px; left: 10px; background: #333; color: #fff; padding: 10px; font-family: monospace; font-size: 12px; border-radius: 5px; z-index: 10000; pointer-events: none;">
+                Initializing game...
+            </div>
+
             <div id="score-display" data-testid="score-display">
                 <span id="current-score">0</span>
             </div>
-            
+
             <div id="start-screen" data-testid="start-screen">
                 <h1>Flappy Bird 3D</h1>
                 <p>Press SPACE or TAP to start</p>
             </div>
-            
+
             <div id="game-over-screen" class="hidden" data-testid="game-over-screen">
                 <h2>Game Over!</h2>
                 <p>Score: <span id="final-score">0</span></p>

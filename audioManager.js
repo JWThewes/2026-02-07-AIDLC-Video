@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 
 /**
  * AudioManager - Handles audio playback and sound effects
@@ -35,11 +35,13 @@ export class AudioManager {
 
   /**
    * Create a funny flap sound using Web Audio API
-   * @returns {AudioBuffer} - Generated audio buffer
+   * @returns {AudioBuffer|null} - Generated audio buffer or null if audioContext unavailable
    */
   createFlapSound() {
+    if (!this.audioContext) return null;
+    
     const duration = 0.15;
-    const sampleRate = this.audioContext?.sampleRate || 44100;
+    const sampleRate = this.audioContext.sampleRate;
     const buffer = this.audioContext.createBuffer(1, duration * sampleRate, sampleRate);
     const data = buffer.getChannelData(0);
 
@@ -56,11 +58,13 @@ export class AudioManager {
 
   /**
    * Create a funny score sound using Web Audio API
-   * @returns {AudioBuffer} - Generated audio buffer
+   * @returns {AudioBuffer|null} - Generated audio buffer or null if audioContext unavailable
    */
   createScoreSound() {
+    if (!this.audioContext) return null;
+    
     const duration = 0.3;
-    const sampleRate = this.audioContext?.sampleRate || 44100;
+    const sampleRate = this.audioContext.sampleRate;
     const buffer = this.audioContext.createBuffer(1, duration * sampleRate, sampleRate);
     const data = buffer.getChannelData(0);
 
@@ -77,11 +81,13 @@ export class AudioManager {
 
   /**
    * Create a funny collision sound using Web Audio API
-   * @returns {AudioBuffer} - Generated audio buffer
+   * @returns {AudioBuffer|null} - Generated audio buffer or null if audioContext unavailable
    */
   createCollisionSound() {
+    if (!this.audioContext) return null;
+    
     const duration = 0.4;
-    const sampleRate = this.audioContext?.sampleRate || 44100;
+    const sampleRate = this.audioContext.sampleRate;
     const buffer = this.audioContext.createBuffer(1, duration * sampleRate, sampleRate);
     const data = buffer.getChannelData(0);
 
@@ -104,14 +110,22 @@ export class AudioManager {
     if (!this.audioContext) {
       this.init();
     }
+    
+    // Verify audioContext was successfully initialized
+    if (!this.audioContext) {
+      console.warn('AudioManager: Failed to initialize audio context. Audio will be disabled.');
+      this.enabled = false;
+      return;
+    }
 
     const flapBuffer = this.createFlapSound();
     const scoreBuffer = this.createScoreSound();
     const collisionBuffer = this.createCollisionSound();
 
-    this.addSound('flap', flapBuffer);
-    this.addSound('score', scoreBuffer);
-    this.addSound('collision', collisionBuffer);
+    // Only add sounds if buffers were successfully created
+    if (flapBuffer) this.addSound('flap', flapBuffer);
+    if (scoreBuffer) this.addSound('score', scoreBuffer);
+    if (collisionBuffer) this.addSound('collision', collisionBuffer);
   }
 
   /**
