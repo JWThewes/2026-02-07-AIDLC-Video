@@ -171,11 +171,14 @@ export class FlappyBirdGame {
             // Update visual debug indicator
             const debugDiv = document.getElementById('debug-key-display');
             if (debugDiv) {
-                debugDiv.textContent = `Last key: ${e.code} (${e.key}) at ${new Date().toLocaleTimeString()}`;
+                const keyInfo = e.code === 'Space' ? '✓ SPACEBAR' : e.code;
+                debugDiv.textContent = `Key detected: ${keyInfo} at ${new Date().toLocaleTimeString()}`;
                 debugDiv.style.backgroundColor = '#00ff00';
+                debugDiv.style.fontWeight = 'bold';
                 setTimeout(() => {
-                    debugDiv.style.backgroundColor = '#333';
-                }, 200);
+                    debugDiv.style.backgroundColor = '#006600';
+                    debugDiv.textContent = '✓ READY - Press SPACEBAR or CLICK to start!';
+                }, 500);
             }
         };
 

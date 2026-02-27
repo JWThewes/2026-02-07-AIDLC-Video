@@ -52,6 +52,14 @@ window.addEventListener('DOMContentLoaded', () => {
     console.log('[Main] Canvas exists:', !!document.getElementById('game-canvas'));
 
     console.log('[Main] Initializing Flappy Bird game...');
+
+    // Update debug display immediately to show initialization started
+    const debugDiv = document.getElementById('debug-key-display');
+    if (debugDiv) {
+        debugDiv.textContent = 'Loading game assets...';
+        debugDiv.style.backgroundColor = '#336699';
+    }
+
     try {
         const game = new FlappyBirdGame();
         console.log('[Main] Game initialized successfully');
@@ -63,21 +71,18 @@ window.addEventListener('DOMContentLoaded', () => {
         console.log('[Main] You can run window.diagnoseKeyboardIssue() to test keyboard events');
         console.log('[Main] Press SPACEBAR to start the game');
 
-        // Visual confirmation in debug display
-        setTimeout(() => {
-            const debugDiv = document.getElementById('debug-key-display');
-            if (debugDiv) {
-                debugDiv.textContent = '✓ Game initialized - Press SPACEBAR to test';
-                debugDiv.style.backgroundColor = '#006600';
-            }
-        }, 100);
+        // Visual confirmation in debug display - update immediately, no setTimeout
+        if (debugDiv) {
+            debugDiv.textContent = '✓ READY - Press SPACEBAR or CLICK to start!';
+            debugDiv.style.backgroundColor = '#006600';
+            debugDiv.style.fontWeight = 'bold';
+        }
 
     } catch (error) {
         console.error('[Main] Failed to initialize game:', error);
         console.error('[Main] Error stack:', error.stack);
 
         // Visual error indicator
-        const debugDiv = document.getElementById('debug-key-display');
         if (debugDiv) {
             debugDiv.textContent = '✗ Game initialization failed - check console';
             debugDiv.style.backgroundColor = '#660000';
